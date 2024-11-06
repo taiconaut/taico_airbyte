@@ -1,5 +1,14 @@
 # Changelog
 
+## 6.2.0
+Support multiple input datetime formats as part of the concurrent cursor
+
+## 6.1.1
+fix streams discover
+
+## 6.1.0
+Add option to File Transfer for File-Bases sources
+
 ## 6.0.0
 Introduce support for low-code incremental streams to be run within the concurrent CDK framework
 
