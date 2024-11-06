@@ -6,6 +6,7 @@ package io.airbyte.cdk.load.data.json
 
 import com.fasterxml.jackson.databind.JsonNode
 import io.airbyte.cdk.load.data.*
+import io.airbyte.cdk.util.Jsons
 import java.math.BigDecimal
 
 /**
@@ -34,16 +35,20 @@ class JsonToAirbyteValue {
                 is ObjectType -> toObject(json, schema)
                 is ObjectTypeWithoutSchema,
                 is ObjectTypeWithEmptySchema -> toObjectWithoutSchema(json)
-                is StringType -> StringValue(json.asText())
+                is StringType -> toString(json)
                 is TimeTypeWithTimezone,
                 is TimeTypeWithoutTimezone -> TimeValue(json.asText())
                 is TimestampTypeWithTimezone,
                 is TimestampTypeWithoutTimezone -> TimestampValue(json.asText())
                 is UnionType -> toUnion(json, schema.options)
-                is UnknownType -> UnknownValue("From $schema: $json")
+                // If we fail to recognize the schema, just pass the json through directly.
+                // This enables us to more easily add new types, without breaking compatibility
+                // within existing connections.
+                is UnknownType -> fromJson(json)
             }
         } catch (t: Throwable) {
-            return UnknownValue(t.message ?: "Unknown error")
+            // In case of any failure, just pass the json through directly.
+            return fromJson(json)
         }
     }
 
@@ -61,6 +66,14 @@ class JsonToAirbyteValue {
         }
 
         return ArrayValue(json.map { fromJson(it) })
+    }
+
+    private fun toString(json: JsonNode): StringValue {
+        return if (json.isTextual) {
+            StringValue(json.asText())
+        } else {
+            StringValue(Jsons.writeValueAsString(json))
+        }
     }
 
     private fun toBoolean(json: JsonNode): BooleanValue {
@@ -103,18 +116,13 @@ class JsonToAirbyteValue {
         if (!json.isObject) {
             throw IllegalArgumentException("Could not convert $json to Object")
         }
+        val objectProperties = LinkedHashMap<String, AirbyteValue>()
+        json.fields().forEach { (key, value) ->
+            val type = schema.properties[key]?.type ?: UnknownType("undeclared field")
+            objectProperties[key] = convert(value, type)
+        }
 
-        return ObjectValue(
-            values =
-                schema.properties
-                    // Note that this will create an ObjectValue where properties in the schema
-                    // might not exist in the value.
-                    // This matches JSON behavior (i.e. explicit null != property not set),
-                    // but we maybe would prefer to set an explicit NullValue.
-                    .filter { (name, _) -> json.has(name) }
-                    .mapValues { (name, field) -> convert(json.get(name), field.type) }
-                    .toMap(LinkedHashMap())
-        )
+        return ObjectValue(objectProperties)
     }
 
     private fun toObjectWithoutSchema(json: JsonNode): ObjectValue {
