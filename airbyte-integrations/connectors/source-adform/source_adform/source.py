@@ -1,11 +1,39 @@
-#
-# Copyright (c) 2025 Airbyte, Inc., all rights reserved.
-#
+"""
+Adform API Source Connector for Airbyte
 
+This module contains the implementation of a custom source connector for the Adform API using the Airbyte CDK.
+It consists of two main stream classes: ReportCreationStream for creating reports, and ReportDataStream for
+fetching the report data.
 
-from abc import ABC
-from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple
+Classes:
+    ReportCreationStream: Handles the creation of reports via the Adform API.
+    ReportDataStream: Fetches and processes the data from created reports.
 
+Usage:
+    This connector is designed to be used with the Airbyte platform to sync data from the Adform API
+    to various destinations.
+
+Configuration:
+    The connector requires the following configuration parameters:
+    - api_key: Your Adform API key
+    - filter: Filter criteria for the report
+    - metrics: Metrics to include in the report
+    - dimensions: Dimensions to include in the report
+
+Note:
+    This connector implements pagination and handles rate limiting as per Adform API specifications.
+    It uses a parent-child stream relationship where ReportCreationStream is the parent and
+    ReportDataStream is the child.
+
+Dependencies:
+    - airbyte_cdk
+    - requests
+
+For more information on developing custom source connectors for Airbyte, please refer to:
+https://docs.airbyte.com/connector-development/
+"""
+
+import time
 import requests
 from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import Stream
