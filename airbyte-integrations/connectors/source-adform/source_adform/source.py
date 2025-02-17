@@ -221,6 +221,24 @@ class SourceAdform(AbstractSource):
         :param logger:  logger object
         :return Tuple[bool, any]: (True, None) if the input config can be used to connect to the API successfully, (False, error) otherwise.
         """
+        try:
+            Oauth2Authenticator(
+                token_refresh_endpoint="https://id.adform.com/sts/connect/token",
+                client_id=config["client_id"],
+                client_secret=config["client_secret"],
+                refresh_token=None,
+                scopes=config["scope"],
+                token_expiry_date=None,
+                grant_type="client_credentials",
+                refresh_request_body={
+                    "grant_type": "client_credentials",
+                    "client_id": config['client_id'],
+                    "client_secret": config['client_secret'],
+                    "scope": config['scope']
+                }
+            )
+        except Exception as e:
+            return False, e
         return True, None
 
     def streams(self, config: Mapping[str, Any]) -> List[Stream]:
@@ -229,6 +247,32 @@ class SourceAdform(AbstractSource):
 
         :param config: A Mapping of the user input configuration as defined in the connector spec.
         """
-        # TODO remove the authenticator if not required.
-        auth = TokenAuthenticator(token="api_key")  # Oauth2Authenticator is also available if you need oauth support
-        return [Customers(authenticator=auth), Employees(authenticator=auth)]
+        auth = Oauth2Authenticator(
+            token_refresh_endpoint="https://id.adform.com/sts/connect/token",
+            client_id=config["client_id"],
+            client_secret=config["client_secret"],
+            refresh_token=None,
+            scopes=config["scope"],
+            token_expiry_date=None,
+            grant_type="client_credentials",
+            refresh_request_body={
+                "grant_type": "client_credentials",
+                "client_id": config['client_id'],
+                "client_secret": config['client_secret'],
+                "scope": config['scope']
+            }
+        )
+        report_creation = ReportCreationStream(
+            authenticator=auth,
+            name="report_creation",
+            path="/v1/buyer/stats/data",
+            config=config
+        )
+        return [
+            ReportDataStream(
+                name="report_data",
+                authenticator=auth,
+                parent=report_creation,
+                config=config
+           )
+        ]
