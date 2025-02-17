@@ -106,14 +106,14 @@ class ReportCreationStream(HttpStream):
         
         today: date = date.today()
 
-        start_date = self.config.get("start_date", today.strftime(DATE_FORMAT))
-        end_date = self.config.get("end_date", DEFAULT_START_DATE) 
+        start_date = self.config.get("start_date", DEFAULT_START_DATE)
+        end_date = self.config.get("end_date", today.strftime(DATE_FORMAT)) 
 
         request_payload = {
             "filter": {
                 "date": {
-                    "From": start_date,
-                    "To": end_date
+                    "from": start_date,
+                    "to": end_date
                 }
             },
             "metrics": METRICS,
@@ -124,6 +124,7 @@ class ReportCreationStream(HttpStream):
             },
             "includeRowCount": True
         }
+        print(request_payload)
         return request_payload
     
     def backoff_time(self, response: requests.Response) -> Optional[float]:
