@@ -46,6 +46,8 @@ from airbyte_cdk.sources.streams.http.requests_native_auth import Oauth2Authenti
 DATE_FORMAT = "%Y-%m-%d"
 POLLING_IN_SECONDS = 30
 DEFAULT_START_DATE = "2016-01-01"
+METRICS = ["impressions", "clicks", "conversionsAll", "conversions", "cov", "salesAll", "sales", "ecpm", "ecpc", "cost"],
+DIMENSIONS = ["date", "campaign", "campaignID", "media", "banner", "bannerType"]
 
 class ReportCreationStream(HttpStream):
     # Implementation for creating the report and getting the report ID
@@ -114,8 +116,8 @@ class ReportCreationStream(HttpStream):
                     "To": end_date
                 }
             },
-            "metrics": self.config["metrics"],
-            "dimensions": self.config["dimensions"],
+            "metrics": METRICS,
+            "dimensions": DIMENSIONS,
             "paging": {
                 "offset": self._offset,
                 "limit": self.page_size,
