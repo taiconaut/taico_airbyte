@@ -4,9 +4,29 @@ connectionSpecification:
   title: Adform Spec
   type: object
   required:
-    - TODO
+    - client_id
+    - client_secret
+    - scope
   properties:
     # 'TODO: This schema defines the configuration required for the source. This usually involves metadata such as database and/or authentication information.':
-    TODO:
+    client_id:
+      title: "Client ID"
       type: string
-      description: describe me
+      # description: Client ID
+    client_secret:
+      title: "Client Secret"
+      type: string
+      # description: Client Secret
+      airbyte_secret: true
+    scope:
+      title: "Scope"
+      type: string
+      # description: Scope
+    start_date:
+      type: string
+      format: date
+      title: "From Date (YYYY-MM-DD)"
+    end_date:
+      type: string
+      format: date
+      title: "To Date (YYYY-MM-DD)"
