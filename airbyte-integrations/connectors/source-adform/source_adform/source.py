@@ -158,64 +158,70 @@ class ReportDataStream(HttpSubStream):
         super().__init__(parent=parent, authenticator=authenticator)
 
     @property
-    def cursor_field(self) -> str:
-        """
-        TODO
-        Override to return the cursor field used by this stream e.g: an API entity might always use created_at as the cursor field. This is
-        usually id or date based. This field's presence tells the framework this in an incremental stream. Required for incremental.
+    def name(self) -> str:
+        return self._name
 
-        :return str: The name of the cursor field.
-        """
-        return []
+    @property
+    def primary_key(self) -> Optional[Union[str, List[str], List[List[str]]]]:
+        return self._primary_key
+    
+    def path(
+        self,
+        stream_state: Mapping[str, Any] = None,
+        stream_slice: Mapping[str, Any] = None,
+        next_page_token: Mapping[str, Any] = None
+    ) -> str:
+        return stream_slice['report_path']
+   
+    def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
+        return None
+    
+    def stream_slices(self, sync_mode, cursor_field: List[str] = None, stream_state: Mapping[str, Any] = None) -> Iterable[Optional[Mapping[str, Any]]]:
+        while self._has_more_data:
+            parent_slice = next(self.parent.stream_slices(sync_mode=sync_mode, cursor_field=cursor_field, stream_state=stream_state), None)
+            if parent_slice is None:
+                break
+            
+            parent_records = list(self.parent.read_records(sync_mode=sync_mode, stream_slice=parent_slice))
+            if not parent_records:
+                break
+           
+            report_location = parent_records[0]['report_path']
+            offset = parent_records[0]['offset']
+           
+            time.sleep(POLLING_IN_SECONDS)
+            yield {"report_path": report_location, "offset": offset}
+    
+    def parse_response(self, response: requests.Response, stream_slice: Mapping[str, Any] = None, stream_state: Mapping[str, Any] = None, *kwargs) -> Iterable[Mapping]:
+        response_json = response.json()
+        report_data = response_json['reportData']
+        columns = report_data['columnHeaders']
+        rows = report_data['rows']
 
-    def get_updated_state(self, current_stream_state: MutableMapping[str, Any], latest_record: Mapping[str, Any]) -> Mapping[str, Any]:
-        """
-        Override to determine the latest state after reading the latest record. This typically compared the cursor_field from the latest record and
-        the current state and picks the 'most' recent cursor. This is how a stream's state is determined. Required for incremental.
-        """
-        return {}
+        self.logger.info(f"Reading report data")
 
+        for row in rows:
+            yield dict(zip(columns, row))
+        
+        # Check if we've reached the end of the data
+        if len(rows) < self.parent.page_size:
+            self.logger.info("Reached end of data")
+            self._has_more_data = False
+        else:
+            # Update the parent's offset for the next iteration
+            self.parent._offset += self.parent.page_size
+    
+    def backoff_time(self, response: requests.Response) -> Optional[float]:
+        if isinstance(response, Exception):
+            self.logger.warning(f"Back off due to {type(response)}.")
+            return POLLING_IN_SECONDS * 2
+        if response.status_code == 404:
+            self.logger.warning(f"Query results are not ready yet! Retrying in {POLLING_IN_SECONDS*2} seconds...")
+            return POLLING_IN_SECONDS * 2
+        return super().backoff_time(response)
 
-class Employees(IncrementalAdformStream):
-    """
-    TODO: Change class name to match the table/data source this stream corresponds to.
-    """
-
-    # TODO: Fill in the cursor_field. Required.
-    cursor_field = "start_date"
-
-    # TODO: Fill in the primary key. Required. This is usually a unique field in the stream, like an ID or a timestamp.
-    primary_key = "employee_id"
-
-    def path(self, **kwargs) -> str:
-        """
-        TODO: Override this method to define the path this stream corresponds to. E.g. if the url is https://example-api.com/v1/employees then this should
-        return "single". Required.
-        """
-        return "employees"
-
-    def stream_slices(self, stream_state: Mapping[str, Any] = None, **kwargs) -> Iterable[Optional[Mapping[str, any]]]:
-        """
-        TODO: Optionally override this method to define this stream's slices. If slicing is not needed, delete this method.
-
-        Slices control when state is saved. Specifically, state is saved after a slice has been fully read.
-        This is useful if the API offers reads by groups or filters, and can be paired with the state object to make reads efficient. See the "concepts"
-        section of the docs for more information.
-
-        The function is called before reading any records in a stream. It returns an Iterable of dicts, each containing the
-        necessary data to craft a request for a slice. The stream state is usually referenced to determine what slices need to be created.
-        This means that data in a slice is usually closely related to a stream's cursor_field and stream_state.
-
-        An HTTP request is made for each returned slice. The same slice can be accessed in the path, request_params and request_header functions to help
-        craft that specific request.
-
-        For example, if https://example-api.com/v1/employees offers a date query params that returns data for that particular day, one way to implement
-        this would be to consult the stream state object for the last synced date, then return a slice containing each date from the last synced date
-        till now. The request_params function would then grab the date from the stream_slice and make it part of the request by injecting it into
-        the date query param.
-        """
-        raise NotImplementedError("Implement stream slices or delete this method!")
-
+    def should_retry(self, response: requests.Response) -> bool:
+        return response.status_code in [404]
 
 # Source
 class SourceAdform(AbstractSource):
