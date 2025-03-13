@@ -1,0 +1,32 @@
+documentationUrl: https://docsurl.com
+connectionSpecification:
+  $schema: http://json-schema.org/draft-07/schema#
+  title: Adform Spec
+  type: object
+  required:
+    - client_id
+    - client_secret
+    - scope
+  properties:
+    # 'TODO: This schema defines the configuration required for the source. This usually involves metadata such as database and/or authentication information.':
+    client_id:
+      title: "Client ID"
+      type: string
+      # description: Client ID
+    client_secret:
+      title: "Client Secret"
+      type: string
+      # description: Client Secret
+      airbyte_secret: true
+    scope:
+      title: "Scope"
+      type: string
+      # description: Scope
+    start_date:
+      type: string
+      format: date
+      title: "From Date (YYYY-MM-DD)"
+    end_date:
+      type: string
+      format: date
+      title: "To Date (YYYY-MM-DD)"
