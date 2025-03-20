@@ -1,0 +1,40 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "date": {
+        "type": ["null", "string"],
+        "format": "date-time"
+      },
+      "channelId": {
+        "type": ["null", "number"]
+      },
+      "countryId": {
+        "type": ["null", "number"]
+      },
+      "adFormatId": {
+        "type": ["null", "number"]
+      },
+      "subAdFormatId": {
+        "type": ["null", "number"]
+      },
+      "advertiserId": {
+        "type": ["null", "number"]
+      },
+      "ctr": {
+        "type": ["null", "number"]
+      },
+      "clicks": {
+        "type": ["null", "number"]
+      },
+      "paidImpressions": {
+        "type": ["null", "number"]
+      },
+      "revenue": {
+        "type": ["null", "number"]
+      },
+      "ecpm": {
+        "type": ["null", "number"]
+      }
+    }
+  }
