@@ -4,9 +4,17 @@ connectionSpecification:
   title: Pubmatic Spec
   type: object
   required:
-    - TODO
+    - publisher_id
+    - email
+    - password
   properties:
-    # 'TODO: This schema defines the configuration required for the source. This usually involves metadata such as database and/or authentication information.':
-    TODO:
+    publisher_id:
+      title: Publisher ID
       type: string
-      description: describe me
+    email:
+      title: E-mail
+      type: string
+    password: 
+      title: Password
+      airbyte-secret: true
+
