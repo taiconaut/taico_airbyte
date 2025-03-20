@@ -7,19 +7,19 @@
         "format": "date-time"
       },
       "channelId": {
-        "type": ["null", "number"]
+        "type": ["null", "string"]
       },
       "countryId": {
-        "type": ["null", "number"]
+        "type": ["null", "string"]
       },
       "adFormatId": {
-        "type": ["null", "number"]
+        "type": ["null", "string"]
       },
       "subAdFormatId": {
-        "type": ["null", "number"]
+        "type": ["null", "string"]
       },
       "advertiserId": {
-        "type": ["null", "number"]
+        "type": ["null", "string"]
       },
       "ctr": {
         "type": ["null", "number"]
