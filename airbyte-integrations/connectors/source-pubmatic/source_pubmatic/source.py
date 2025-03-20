@@ -1,11 +1,29 @@
-#
-# Copyright (c) 2025 Airbyte, Inc., all rights reserved.
-#
+"""
+Pubmatic API Source Connector for Airbyte
 
+This module contains the implementation of a custom source connector for the Pubmatic API using the Airbyte CDK.
+It consists of one main stream class: Analytics
 
-from abc import ABC
-from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple
+Classes:
+    Analytics: Executes a certain analytics report.
 
+Usage:
+    This connector is designed to be used with the Airbyte platform to sync data from the Pubmatic API
+    to various destinations.
+
+Configuration:
+    The connector requires the following configuration parameters:
+    - publisher_id: Your Pubmatic account ID
+    - email: Your Pubmatic login email
+    - password: Your Pubmatic login password
+
+Dependencies:
+    - airbyte_cdk
+    - requests
+
+For more information on developing custom source connectors for Airbyte, please refer to:
+https://docs.airbyte.com/connector-development/
+"""
 import requests
 from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import Stream
