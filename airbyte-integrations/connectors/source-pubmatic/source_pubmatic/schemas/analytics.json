@@ -3,8 +3,7 @@
     "type": "object",
     "properties": {
       "date": {
-        "type": ["null", "string"],
-        "format": "date-time"
+        "type": ["null", "string"]
       },
       "channelId": {
         "type": ["null", "string"]
