@@ -82,7 +82,7 @@ class AnalyticsStream(HttpStream):
             "dimensions": f"{date_unit[self.frquency]},channelId,countryId,adFormatId,subAdFormatId,advertiserId",
             "currency": "EUR"
         }
-        
+        self.logger.info(f"Pulling {self.frquency} data from {self.start_date} to {self.end_date}")
         return params
         
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
