@@ -26,21 +26,31 @@ https://docs.airbyte.com/connector-development/
 """
 import requests
 from typing import Any, List, Mapping, Tuple, Optional, Iterable
-from datetime import datetime
+from datetime import datetime, timedelta
 from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import Stream
 from airbyte_cdk.sources.streams.http import HttpStream
 from airbyte_cdk.sources.streams.http.auth import TokenAuthenticator
 
+WINDOW_LENGTH = {
+    "daily": 100,
+    "monthly": 50*30
+}
+date_unit = {
+    "daily": "date",
+    "monthly": "month"
+}
 class AnalyticsStream(HttpStream):
     url_base = "https://api.pubmatic.com/"
     primary_key = None  # Define your primary key if applicable
     def __init__(self, config: Mapping[str, Any], authenticator, *kwargs):
+        self.frquency = config["frequency"]
         self._name = "analytics"
-        today = datetime.now().strftime("%Y-%m-%dT00:00")
         self.publisher_id = config["publisher_id"]
-        self.start_date = config.get("start_date", "2016-01-01T00:00")
-        self.end_date = config.get("end_date", today)
+        today = datetime.now()
+        self.end_date = today.strftime("%Y-%m-%d")
+        self.window_length = WINDOW_LENGTH[config['frequency']]
+        self.start_date = (today - timedelta(days=self.window_length)).strftime("%Y-%m-%d")
         self.config = config
         super().__init__(authenticator=authenticator)
         
@@ -64,12 +74,13 @@ class AnalyticsStream(HttpStream):
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
     ) -> Mapping[str, Any]:
         
-        params = {
+        params = {  
             "toDate": self.end_date,
             "metrics": "ctr,clicks,paidImpressions,revenue,ecpm",
-            "dateUnit": "date",
+            "dateUnit": date_unit[self.frquency],
             "fromDate": self.start_date,
-            "dimensions": "date,channelId,countryId,adFormatId,subAdFormatId,advertiserId"
+            "dimensions": f"{date_unit[self.frquency]},channelId,countryId,adFormatId,subAdFormatId,advertiserId",
+            "currency": "EUR"
         }
         
         return params
@@ -77,8 +88,9 @@ class AnalyticsStream(HttpStream):
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         response_json = response.json()
         display_value = response_json.get('displayValue', {})
-        rows = response_json["rows"]
-        columns = response_json["columns"]
+        rows = response_json.pop("rows")
+        columns = response_json.pop("columns")
+        columns[0] = "date"
         for row in rows:
             record = dict(zip(columns, row))
             for field, id_value in record.items():
